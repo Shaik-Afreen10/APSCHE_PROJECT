@@ -12,43 +12,57 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for modern design and crisp typography
+# Adaptive CSS using Streamlit Theme Variables
 st.markdown("""
 <style>
-    /* Main body background tweak */
-    .stApp {
-        background-color: #0e1117;
-    }
+    /* Let Streamlit handle .stApp background color dynamically */
     
-    /* Result Box Styling with white text for high contrast */
+    /* Result Box Styling using dynamic theme tokens */
     .result-card {
         padding: 2rem;
         border-radius: 12px;
         margin: 1rem 0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: 1px solid var(--border-color);
     }
+    
     .result-card h2 {
         margin: 0 !important;
         font-weight: 700 !important;
         font-size: 2.2rem !important;
     }
+    
     .result-card p {
         margin-top: 10px !important;
         font-size: 1.1rem !important;
+        color: var(--text-color);
         opacity: 0.9;
     }
     
-    /* Dynamic color classes with crisp white/light-gray text */
-    .very-high-card { background: linear-gradient(135deg, #1e4620, #0f2310); border-left: 6px solid #28a745; color: #ffffff !important; }
+    /* Using opacity-based alpha channels so backgrounds look great on white OR dark themes */
+    .very-high-card { 
+        background: rgba(40, 167, 69, 0.15); 
+        border-left: 6px solid #28a745; 
+    }
     .very-high-card h2 { color: #28a745 !important; }
     
-    .high-card { background: linear-gradient(135deg, #1b3a4b, #0d1d26); border-left: 6px solid #007bff; color: #ffffff !important; }
+     Tariffs adjustments for light/dark scaling */
+    .high-card { 
+        background: rgba(0, 123, 255, 0.15); 
+        border-left: 6px solid #007bff; 
+    }
     .high-card h2 { color: #007bff !important; }
     
-    .medium-card { background: linear-gradient(135deg, #4d3d0c, #261f06); border-left: 6px solid #ffc107; color: #ffffff !important; }
-    .medium-card h2 { color: #ffc107 !important; }
+    .medium-card { 
+        background: rgba(255, 193, 7, 0.18); 
+        border-left: 6px solid #ffc107; 
+    }
+    .medium-card h2 { color: #b8860b !important; } /* Darker yellow/gold for visibility on white backdrops */
     
-    .low-card { background: linear-gradient(135deg, #4d1c1c, #260e0e); border-left: 6px solid #dc3545; color: #ffffff !important; }
+    .low-card { 
+        background: rgba(220, 53, 69, 0.15); 
+        border-left: 6px solid #dc3545; 
+    }
     .low-card h2 { color: #dc3545 !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -95,7 +109,7 @@ defaults = {
 
 le_d, ms_d, es_d, gni_d = defaults[scenario]
 
-# Input sliders (locked to preset values if a preset is selected)
+# Input sliders
 life_expectancy = st.sidebar.slider(
     "🏥 Life Expectancy (years)", 40.0, 90.0, le_d, 0.5,
     help="Average lifespan at birth. Reflects systemic healthcare and living conditions."
@@ -122,7 +136,6 @@ col1, col2 = st.columns([1, 1.2], gap="large")
 with col1:
     st.subheader("📋 Input Configurations")
     
-    # Using streamlined native columns for clean, card-like metrics
     m_col1, m_col2 = st.columns(2)
     with m_col1:
         st.metric(label="Life Expectancy", value=f"{life_expectancy:.1f} Yrs")
@@ -137,18 +150,14 @@ with col1:
 with col2:
     st.subheader("🎯 Prediction Result")
     
-    # Trigger prediction automatically on preset changes or on explicit click
     if predict_btn or scenario != "Custom":
-        # Feature vector assembly
         input_features = np.array([[life_expectancy, mean_years_schooling, expected_years_schooling, gni_per_capita]])
         input_scaled = scaler.transform(input_features)
         
-        # Pipeline execution
         prediction = model.predict(input_scaled)[0]
         probabilities = model.predict_proba(input_scaled)[0]
         prob_dict = dict(zip(model.classes_, probabilities))
         
-        # UI mapping tags
         tier_slugs = {'Very High': 'very-high', 'High': 'high', 'Medium': 'medium', 'Low': 'low'}
         tier_descriptions = {
             'Very High': 'This profile reflects exceptional infrastructure, strong educational pipelines, and superior public health systems.',
@@ -157,7 +166,7 @@ with col2:
             'Low': 'This profile faces critical systemic headwinds across economic resources, school accessibility, and healthcare.'
         }
         
-        # Output card rendering with clean, white contrast texts
+        # Transparent background card that reads beautifully on dark and light backgrounds
         st.markdown(f'''
         <div class="result-card {tier_slugs[prediction]}-card">
             <h2>{prediction} HDI</h2>
@@ -180,11 +189,14 @@ with col2:
                 'Low': '#dc3545'
             }
         )
+        # Using template="plotly" lets Plotly automatically sync light/dark chart grid lines with the browser
         fig.update_layout(
             showlegend=False, 
             height=240, 
             margin=dict(l=20, r=20, t=40, b=20),
-            xaxis_tickformat='.0%'
+            xaxis_tickformat='.0%',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)'
         )
         st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
     else:
@@ -192,8 +204,8 @@ with col2:
 
 # Metadata Breakdown Layout 
 st.write("---")
-expander = st.開設_expander if hasattr(st, "開設_expander") else st.expander("📖 View HDI Classification Index Metrics")
-with expander:
+# Cleaned up unnecessary character logic to natively use cleaner st.expander 
+with st.expander("📖 View HDI Classification Index Metrics"):
     tier_info = pd.DataFrame({
         'Tier Classification': ['Very High Development', 'High Development', 'Medium Development', 'Low Development'],
         'Official HDI Range': ['≥ 0.800', '0.700 - 0.799', '0.550 - 0.699', '< 0.550'],
@@ -204,4 +216,4 @@ with expander:
             'Resource constrained settings, ongoing infrastructure programs, active development target profiles.'
         ]
     })
-    st.table(tier_info)
+    st.dataframe(tier_info, use_container_width=True)
