@@ -35,11 +35,6 @@ ENV/
 .DS_Store
 Thumbs.db
 
-# Model files (can be regenerated)
-*.joblib
-*.pkl
-*.csv
-
 # Streamlit
 .streamlit/
 
